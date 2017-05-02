@@ -2,8 +2,9 @@
   * Created by vincent on 27/4/2017.
   */
 
-import akka.actor.{Actor, ActorIdentity, ActorLogging, DeadLetter, Identify, Props, Terminated}
+import akka.actor.{Actor, ActorIdentity, ActorLogging, DeadLetter, Identify, PoisonPill, Props, ReceiveTimeout, Status, Terminated}
 
+import scala.concurrent.duration._
 
 object DemoActor {
   /**
@@ -29,19 +30,33 @@ class DemoActor(magicNumber: Int) extends Actor with ActorLogging {
   context.watch(myActor)
   println("watching myActor")
 
+  //  context.setReceiveTimeout(1000 milliseconds)
 
   def receive = {
     case ActorIdentity(`identifyId`, Some(ref)) =>
       println(s"get actorRef: $ref")
-//      context.watch(ref)
+    //      context.watch(ref)
     case ActorIdentity(`identifyId`, None) => println("not found the actorRef")
     case x: Int =>
       myActor ! Greeting(s"Vincent Guo with params $x")
 
     case "kill" =>
-      context.stop(myActor);
+//      context.stop(myActor)
+      myActor ! PoisonPill
       println("stopping myActor")
       myActor ! Greeting(s"after kill")
+
+    case Request =>
+      try {
+        throw new Exception("ask for exception")
+        sender() ! 90
+      } catch {
+        case e: Exception => sender() ! Status.Failure(e)
+        //          throw e
+      }
+    case ReceiveTimeout =>
+      println("receiveTimeout")
+
     case DeadLetter(msg, from, to) =>
       log.info("get DEAD LETTER")
       self ! msg

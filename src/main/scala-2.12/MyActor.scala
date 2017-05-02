@@ -1,5 +1,6 @@
 import akka.actor.{Actor, Props}
 import akka.event.Logging
+import scala.concurrent.duration._
 
 object MyActor {
 
@@ -12,6 +13,8 @@ object MyActor {
 
 class MyActor extends Actor {
   val log = Logging(context.system, this)
+
+  implicit val dispatch = context.system.dispatcher
 
   import MyActor._
 
@@ -41,7 +44,11 @@ class MyActor extends Actor {
 
   def receive = {
     case Greeting(greeter) =>
-      log.info(s"I was greeted by $greeter.")
+      val sl = self
+      context.system.scheduler.scheduleOnce(5000 milliseconds) {
+        log.info(s"I was greeted by $greeter in $sl.")
+      }
+
     case Goodbye => log.info("Someone said goodbye to me.")
     case x => println(x)
   }
