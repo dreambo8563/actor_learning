@@ -20,7 +20,7 @@ final case class Result(x: Int)
 case object Request
 
 
-object AkkaActor extends App {
+object AkkaActor {
 
   import DemoActor._
 
@@ -31,6 +31,15 @@ object AkkaActor extends App {
 
   val demoActor = system.actorOf(props(42), "demoActor")
   val pipeActor = system.actorOf(PipeActor.props, "pipeActor")
+  val swap = system.actorOf(Props[HotSwapActor], "swap")
+
+  swap ! "xxx"
+  swap ! "foo"
+  swap ! "xxx"
+  swap ! "ex"
+  swap ! "xxx"
+  swap ! "bar"
+  swap ! "xxx"
 
   system.eventStream.subscribe(demoActor, classOf[DeadLetter])
   println(s"demoActor created !")
@@ -39,10 +48,10 @@ object AkkaActor extends App {
 
   val managerActor = system.actorOf(Props[Manager], "managerActor")
   try {
-      system.scheduler.scheduleOnce(5000 milliseconds) {
-        val stopped: Future[Boolean] = gracefulStop(managerActor, 5 seconds, Manager.Shutdown)
-        Await.result(stopped, 6 seconds)
-      }
+    system.scheduler.scheduleOnce(5000 milliseconds) {
+      val stopped: Future[Boolean] = gracefulStop(managerActor, 5 seconds, Manager.Shutdown)
+      Await.result(stopped, 6 seconds)
+    }
     // the actor has been stopped
   } catch {
     // the actor wasn't stopped within 5 seconds
